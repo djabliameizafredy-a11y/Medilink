@@ -2,385 +2,69 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FastCol CliniQ & Gemma IA — Urgences, Hôpitaux, Pharmacies de Garde & GPS</title>
-
-  <!-- Police moderne Plus Jakarta Sans -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medilink</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-  <!-- Leaflet CSS & JS pour la Carte GPS Interactive -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Styles de l'application -->
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="css/app.css" rel="stylesheet" />
 </head>
 <body>
-
-  <!-- BARRE DE NAVIGATION SUPÉRIEURE -->
-  <header class="app-header">
-    <div class="brand-group">
-      <div class="brand-logo">✚</div>
-      <div class="brand-title">
-        <span>FastCol <span style="color:#38bdf8;">CliniQ</span></span>
-        <span id="gemma-api-status" class="brand-badge-gemma" style="cursor:pointer;" onclick="window.GemmaAssistant.openApiConfigPrompt()" title="Cliquer pour voir/modifier la clé Default Gemini API Key">
-          ✨ Default Gemini API Key
-        </span>
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">Medilink</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="index.html">Accueil</a></li>
+          <li class="nav-item"><a class="nav-link" href="hopitaux.html">Hôpitaux</a></li>
+          <li class="nav-item"><a class="nav-link" href="pharmacies.html">Pharmacies</a></li>
+          <li class="nav-item"><a class="nav-link" href="suivi.html">Suivi</a></li>
+          <li class="nav-item"><a class="nav-link" href="hopital.html">Espace hôpital</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin.html">Administration</a></li>
+        </ul>
       </div>
     </div>
+  </nav>
 
-    <!-- Bascule entre les 4 espaces du cahier des charges -->
-    <nav class="nav-tabs">
-      <button id="tab-btn-explorer" class="nav-tab active" onclick="window.AppController.switchMainView('explorer')">
-        <span>🛰️ Assistant Gemma & Carte GPS</span>
-      </button>
-      <button id="tab-btn-tracking" class="nav-tab" onclick="window.AppController.switchMainView('tracking')">
-        <span>📊 4. Suivi Prise en Charge</span>
-      </button>
-      <button id="tab-btn-hospital" class="nav-tab" onclick="window.AppController.switchMainView('hospital')">
-        <span>🏥 3. Tableau de Bord Hôpital</span>
-        <span id="hospital-req-badge" class="nav-badge">3</span>
-      </button>
-      <button id="tab-btn-admin" class="nav-tab" onclick="window.AppController.switchMainView('admin')">
-        <span>🛡️ Administration & Anti-Abus</span>
-      </button>
-    </nav>
-
-    <!-- Contrôles GPS & Secteur -->
-    <div class="header-actions">
-      <div class="gps-pill" onclick="window.AppController.locateUserRealGPS()" title="Cliquer pour actualiser votre position GPS">
-        <span class="pulse-dot"></span>
-        <span id="gps-status-text">GPS Actif • Temps Réel</span>
+  <header class="hero">
+    <div class="container">
+      <p class="kicker">Orientation médicale</p>
+      <h1>Un hôpital ou une pharmacie, près de vous.</h1>
+      <p class="lead-quiet mt-4">Gemma recueille quelques informations, puis la carte OpenStreetMap montre les établissements autour de votre position. Vous choisissez ensuite d’appeler, de suivre un itinéraire ou d’envoyer une demande.</p>
+      <div class="d-flex flex-wrap gap-2 mt-4">
+        <a class="btn btn-primary" href="hopitaux.html">Chercher un hôpital</a>
+        <a class="btn btn-outline-dark" href="pharmacies.html">Chercher une pharmacie</a>
       </div>
-      <select class="city-select" onchange="window.AppController.changeCity(this.value)" title="Changer de ville">
-        <option value="casablanca">📍 Casablanca</option>
-        <option value="rabat">📍 Rabat</option>
-        <option value="paris">📍 Paris</option>
-        <option value="dakar">📍 Dakar</option>
-      </select>
     </div>
   </header>
 
-  <!-- ESPACE PRINCIPAL -->
-  <main class="app-main">
-
-    <!-- ===================================================================
-         VUE 1 : ASSISTANT GEMMA IA + CARTE GPS + HÔPITAUX & PHARMACIES DE GARDE
-         =================================================================== -->
-    <section id="view-explorer" class="view-section active">
-      <div class="explorer-layout">
-
-        <!-- COLONNE GAUCHE : ASSISTANT MÉDICAL & PHARMACIE GEMMA -->
-        <aside class="gemma-sidebar">
-          <div class="gemma-header">
-            <div class="gemma-header-top">
-              <div class="gemma-identity">
-                <div class="gemma-avatar">✨</div>
-                <div class="gemma-title">
-                  <h2>Gemma Assistance Médicale</h2>
-                  <p>Triage Urgence • Ambulance • Pharmacie de Garde</p>
-                </div>
-              </div>
-              <button class="icon-circle-btn" onclick="window.GemmaAssistant.resetConversation(window.GemmaAssistant.mode)" title="Réinitialiser la conversation">
-                🔄
-              </button>
-            </div>
-
-            <!-- Choix du parcours : Hôpital/Ambulance/Appel OU Achat Médicament/Pharmacie de Garde -->
-            <div class="gemma-mode-switcher">
-              <button id="gemma-mode-hospital" class="mode-btn hospital-mode active"
-                      onclick="window.AppController.setGemmaModeUI('hospital'); window.GemmaAssistant.switchMode('hospital')">
-                🚑 Urgence / Hôpital / Appel
-              </button>
-              <button id="gemma-mode-pharmacy" class="mode-btn pharmacy-mode"
-                      onclick="window.AppController.setGemmaModeUI('pharmacy'); window.GemmaAssistant.switchMode('pharmacy')">
-                💊 Médicament & Garde
-              </button>
-            </div>
-          </div>
-
-          <!-- Barre récapitulative des informations collectées par Gemma -->
-          <div id="gemma-slots-bar" class="gemma-slots-bar"></div>
-
-          <!-- Flux de discussion avec Gemma -->
-          <div id="gemma-chat-feed" class="gemma-chat-feed"></div>
-
-          <!-- Zone de saisie utilisateur -->
-          <div class="gemma-chat-input-bar">
-            <input
-              id="gemma-user-input"
-              type="text"
-              class="gemma-input"
-              placeholder="Répondez à Gemma (nom, maladie, urgence, médicament, ville...)"
-              onkeydown="if(event.key==='Enter'){ window.GemmaAssistant.handleUserInput(this.value); this.value=''; }"
-            />
-            <button class="icon-circle-btn send"
-                    onclick="const inp=document.getElementById('gemma-user-input'); window.GemmaAssistant.handleUserInput(inp.value); inp.value='';"
-                    title="Envoyer à Gemma">
-              ➤
-            </button>
-          </div>
-        </aside>
-
-        <!-- COLONNE CENTRALE : CARTE GPS INTERACTIVE & HUD NAVIGATION (Inspiré des Images 2, 3 et 4) -->
-        <div class="map-stage">
-          <div id="gps-map"></div>
-
-          <!-- Filtres rapides par service en haut de la carte -->
-          <div class="map-top-bar">
-            <div class="map-filter-pills">
-              <button class="map-pill active" data-service="ALL" onclick="window.AppController.filterDirectoryByService('ALL')">
-                🌐 Tous les établissements
-              </button>
-              <button class="map-pill" data-service="Urgences Générales" onclick="window.AppController.filterDirectoryByService('Urgences Générales')">
-                🚨 Urgences 24/7
-              </button>
-              <button class="map-pill" data-service="Cardiologie" onclick="window.AppController.filterDirectoryByService('Cardiologie')">
-                ❤️ Cardiologie
-              </button>
-              <button class="map-pill" data-service="Pédiatrie" onclick="window.AppController.filterDirectoryByService('Pédiatrie')">
-                👶 Pédiatrie
-              </button>
-              <button class="map-pill" data-service="Traumatologie" onclick="window.AppController.filterDirectoryByService('Traumatologie')">
-                🦴 Traumatologie
-              </button>
-              <button class="map-pill" data-service="Pharmacie de Garde" onclick="window.AppController.filterDirectoryByService('Pharmacie de Garde')">
-                🟢 Pharmacies de Garde
-              </button>
-            </div>
-          </div>
-
-          <!-- HUD Turn-by-Turn Navigation (Style Image 4 : 0,4 km Tournez à droite sur Rue des Lilas) -->
-          <div class="nav-turn-hud">
-            <div class="turn-card">
-              <div class="turn-distance-row">
-                <div class="turn-arrow-box">↱</div>
-                <div>
-                  <div id="hud-turn-dist" class="turn-distance">0,4 km</div>
-                  <div style="font-size:11px;color:#4ade80;font-weight:700;">Itinéraire GPS Optimisé</div>
-                </div>
-              </div>
-              <div id="hud-turn-street" class="turn-street">Tournez à droite sur Rue des Lilas</div>
-            </div>
-
-            <div class="eco-mode-card">
-              <div class="eco-badge-left">
-                <div class="eco-icon">⚡</div>
-                <div>
-                  <div id="hud-mode-title" style="font-size:12.5px;font-weight:700;color:#fff;">Corridor Urgence Médicale</div>
-                  <div id="hud-mode-sub" style="font-size:11px;color:var(--text-muted);">CHU Ibn Rochd - Urgences</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Indicateur de vitesse temps réel (Style Image 4 : 29 km/h | 50 km/h) -->
-          <div class="speed-limit-hud">
-            <div class="speed-current">
-              <div id="hud-speed-val" class="val">29</div>
-              <div class="unit">km/h</div>
-            </div>
-            <div class="speed-max">
-              <div class="val">50</div>
-              <div class="unit">km/h</div>
-            </div>
-          </div>
-
-          <!-- Carte flottante Live Tracking & Charge (Style Images 2 & 3 : Arriving in 4m + 87%) -->
-          <div class="live-tracking-overlay">
-            <div class="live-tracking-top">
-              <span style="display:inline-flex;align-items:center;gap:6px;">
-                <span class="pulse-dot red"></span> Suivi GPS en Direct
-              </span>
-              <span id="live-capacity-badge" style="color:#4ade80;">Charge 72%</span>
-            </div>
-            <div id="live-eta-title" class="live-eta-title">Arrivée dans 4 min</div>
-            <div id="live-eta-sub" class="live-eta-sub">CHU Ibn Rochd • 1.4 km</div>
-            <div class="live-route-progress">
-              <div id="live-route-fill" class="live-route-fill"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;">
-              <span>🚑 Unité prête</span>
-              <span>📍 Guidage actif</span>
-            </div>
-          </div>
-
-          <!-- Boutons de contrôle carte à droite (Style Image 4) -->
-          <div class="map-right-controls">
-            <button class="map-ctrl-btn" onclick="window.AppController.locateUserRealGPS()" title="Recentrer sur ma position GPS">➤</button>
-            <button class="map-ctrl-btn" onclick="window.AppController.zoomMap(1)" title="Zoomer">+</button>
-            <button class="map-ctrl-btn" onclick="window.AppController.zoomMap(-1)" title="Dézoomer">−</button>
-            <button class="map-ctrl-btn" onclick="window.AppController.openVideoCallModal(window.AppController.selectedFacilityId)" title="Appel d'urgence">📞</button>
-          </div>
-
-          <!-- Barre inférieure de lancement du guidage (Style Image 4 : Distance, Temps, Heure, DÉMARRER) -->
-          <div class="map-bottom-trip-bar">
-            <div class="trip-metrics">
-              <div class="trip-numbers">
-                <div id="trip-dist-val" class="trip-stat">1.4 km <span>Distance</span></div>
-                <div id="trip-time-val" class="trip-stat">4 min <span>Trajet GPS</span></div>
-                <div id="trip-eta-val" class="trip-stat">15:02 <span>Arrivée estimée</span></div>
-              </div>
-              <div class="trip-bar-track">
-                <div class="trip-bar-segments"></div>
-              </div>
-            </div>
-            <button id="btn-demarrer-gps" class="demarrer-btn" onclick="window.AppController.toggleTurnByTurnSimulation()">
-              DÉMARRER
-            </button>
-          </div>
-        </div>
-
-        <!-- COLONNE DROITE : HÔPITAUX À PROXIMITÉ & PHARMACIES DE GARDE -->
-        <aside class="directory-sidebar">
-          <div class="directory-header">
-            <div class="directory-tabs">
-              <button id="dir-tab-hospitals" class="dir-tab active" onclick="window.AppController.syncDirectoryTab('hospitals')">
-                🏥 Hôpitaux Proches (4)
-              </button>
-              <button id="dir-tab-pharmacies" class="dir-tab" onclick="window.AppController.syncDirectoryTab('pharmacies')">
-                🟢 Pharmacies Garde (3)
-              </button>
-            </div>
-
-            <div class="search-filter-row">
-              <input
-                type="text"
-                class="dir-search"
-                placeholder="Rechercher hôpital, médicament..."
-                oninput="window.AppController.handleDirectorySearch(this.value)"
-              />
-              <select id="dir-service-select" class="dir-service-select" onchange="window.AppController.filterDirectoryByService(this.value)">
-                <option value="ALL">Tous services</option>
-                <option value="Urgences Générales">Urgences Générales</option>
-                <option value="Cardiologie">Cardiologie</option>
-                <option value="Pédiatrie">Pédiatrie</option>
-                <option value="Traumatologie">Traumatologie</option>
-                <option value="Maternité">Maternité</option>
-                <option value="Pharmacie de Garde">Pharmacie de Garde</option>
-              </select>
-            </div>
-          </div>
-
-          <div id="facility-list-container" class="facility-list"></div>
-        </aside>
-
+  <section class="container py-5 rule">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <p class="kicker">01</p>
+        <h2 class="h4">Dire ce dont vous avez besoin</h2>
+        <p class="meta">Nom, motif, niveau d’urgence, ou nom du médicament. Gemma pose seulement les questions utiles à la recherche.</p>
       </div>
-    </section>
-
-    <!-- ===================================================================
-         VUE 2 : ÉTAPE 4 — SUIVI DE LA PRISE EN CHARGE (CÔTÉ DEMANDEUR)
-         Statuts : Envoyée -> Reçue -> En cours de coordination -> Clôturée
-         =================================================================== -->
-    <section id="view-tracking" class="view-section">
-      <div id="tracking-view-content" class="tracking-view-layout"></div>
-    </section>
-
-    <!-- ===================================================================
-         VUE 3 : ÉTAPE 3 — TABLEAU DE BORD HÔPITAL (PERSONNEL AUTORISÉ)
-         =================================================================== -->
-    <section id="view-hospital" class="view-section">
-      <div id="hospital-dashboard-content" class="hospital-dashboard-layout"></div>
-    </section>
-
-    <!-- ===================================================================
-         VUE 4 : PORTAIL D'ADMINISTRATION & ANTI-ABUS
-         =================================================================== -->
-    <section id="view-admin" class="view-section">
-      <div id="admin-portal-content" class="admin-layout"></div>
-    </section>
-
-  </main>
-
-  <!-- =====================================================================
-       MODALE 1 : PRISE DE RENDEZ-VOUS MÉDICAL CLINIQ (Inspirée de l'Image 1)
-       ===================================================================== -->
-  <div id="modal-booking" class="modal-backdrop" onclick="if(event.target===this) window.AppController.closeModals()">
-    <div id="modal-booking-body" class="cliniq-modal-card"></div>
-  </div>
-
-  <!-- =====================================================================
-       MODALE 2 : TÉLÉCONSULTATION & APPEL URGENCE DR. SARAH (Inspirée Image 1)
-       ===================================================================== -->
-  <div id="modal-video-call" class="modal-backdrop" onclick="if(event.target===this) window.AppController.closeModals()">
-    <div class="video-call-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <h3 id="call-doc-name" style="font-size:20px;font-weight:800;">Dr. Sarah Johnson</h3>
-          <p id="call-doc-sub" style="font-size:12px;opacity:0.85;">10:54 minutes • Ligne Urgence Directe</p>
-        </div>
-        <span class="pulse-dot red"></span>
+      <div class="col-md-4">
+        <p class="kicker">02</p>
+        <h2 class="h4">Voir les lieux sur la carte</h2>
+        <p class="meta">Hôpitaux, cliniques et pharmacies viennent d’OpenStreetMap : nom, position, téléphone et horaires lorsqu’ils existent.</p>
       </div>
-
-      <div class="call-center-avatar">
-        <div class="call-doctor-figure">👩‍⚕️</div>
-        <div style="font-size:13px;font-weight:700;background:rgba(0,0,0,0.28);display:inline-block;padding:6px 14px;border-radius:99px;">
-          Connexion Audio/Vidéo Sécurisée HD
-        </div>
-      </div>
-
-      <div>
-        <div class="call-pip-row">
-          <div class="pip-box">
-            <span>🧑</span>
-            <span class="pip-label">Vous (Patient)</span>
-          </div>
-          <div class="pip-box">
-            <span>🚑</span>
-            <span class="pip-label">Régulation SAMU</span>
-          </div>
-        </div>
-
-        <div class="call-controls-bar">
-          <button class="call-ctrl-btn" onclick="window.AppController.showToast('Micro activé / désactivé')">🎙️</button>
-          <button class="call-ctrl-btn" onclick="window.AppController.showToast('Caméra HD activée')">📹</button>
-          <button class="call-ctrl-btn" onclick="window.AppController.showToast('Haut-parleur activé')">🔊</button>
-          <button class="call-ctrl-btn hangup" onclick="window.AppController.closeModals()">📞</button>
-        </div>
+      <div class="col-md-4">
+        <p class="kicker">03</p>
+        <h2 class="h4">Suivre la demande</h2>
+        <p class="meta">Une fois envoyée, la demande passe par reçue, en cours de coordination, puis clôturée. L’hôpital peut répondre depuis son espace.</p>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- =====================================================================
-       MODALE 3 : FEEDBACK & ÉVALUATION POST-PRISE EN CHARGE (Inspirée Image 5)
-       ===================================================================== -->
-  <div id="modal-feedback" class="modal-backdrop" onclick="if(event.target===this) window.AppController.closeModals()">
-    <div class="cliniq-modal-card" style="background:#ffffff;padding:24px;color:#0b2538;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <button class="cliniq-round-icon" style="background:#f1f5f9;" onclick="window.AppController.closeModals()">←</button>
-        <strong style="font-size:15px;">Évaluation de la Prise en Charge</strong>
-        <span></span>
-      </div>
-
-      <div style="text-align:center;margin-bottom:16px;">
-        <p style="font-size:13px;color:#475569;margin-bottom:12px;">Aidez-nous à améliorer la qualité des urgences et de l'orientation GPS :</p>
-        <div style="width:72px;height:72px;border-radius:20px;background:#e2e8f0;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:36px;">👩‍⚕️</div>
-        <div style="font-weight:800;color:#2563eb;font-size:14px;">Dr. Sarah Johnson & Équipe CHU</div>
-        <div style="font-size:24px;color:#f59e0b;margin-top:6px;letter-spacing:4px;">★★★★☆</div>
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;">
-        <span style="background:#dbeafe;color:#1e40af;padding:6px 12px;border-radius:99px;font-size:11.5px;font-weight:700;">Professionnel ✓</span>
-        <span style="background:#dbeafe;color:#1e40af;padding:6px 12px;border-radius:99px;font-size:11.5px;font-weight:700;">Ambulance rapide ✓</span>
-        <span style="background:#f1f5f9;color:#334155;padding:6px 12px;border-radius:99px;font-size:11.5px;font-weight:700;">Guidage GPS précis +</span>
-        <span style="background:#f1f5f9;color:#334155;padding:6px 12px;border-radius:99px;font-size:11.5px;font-weight:700;">Gemma très utile +</span>
-      </div>
-
-      <textarea style="width:100%;height:76px;border-radius:14px;border:1px solid #cbd5e1;padding:10px;font-family:inherit;font-size:12.5px;margin-bottom:14px;"
-      >Le niveau de prise en charge et le guidage GPS vers le service d'urgence ont été exceptionnels.</textarea>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button style="padding:12px;border-radius:99px;border:1px solid #cbd5e1;background:#fff;font-weight:700;cursor:pointer;" onclick="window.AppController.closeModals()">Annuler</button>
-        <button style="padding:12px;border-radius:99px;border:none;background:#1d4ed8;color:#fff;font-weight:700;cursor:pointer;" onclick="window.AppController.submitFeedback()">Envoyer l'avis</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts de données, moteur IA Gemma et contrôleur principal -->
-  <script src="data.js"></script>
-  <script src="gemma-engine.js"></script>
-  <script src="app.js"></script>
+  <footer class="site-footer">
+    <div class="container">Carte : © OpenStreetMap contributors. Les horaires affichés ne confirment pas une disponibilité médicale.</div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
