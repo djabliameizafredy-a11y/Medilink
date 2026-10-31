@@ -29,11 +29,8 @@ window.MapEngine = {
       this.map = null;
     }
 
-    this.map = L.map(containerId, { zoomControl: true, attributionControl: true }).setView([pos.lat, pos.lng], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(this.map);
+    this.map = new maplibregl.Map({ container: containerId, style: "https://tiles.openfreemap.org/styles/liberty", center: [pos.lng, pos.lat], zoom: 13 });
+    this.map.addControl(new maplibregl.NavigationControl());
 
     this.placeUserMarker(pos.lat, pos.lng);
     this.searchNearby();
@@ -45,17 +42,18 @@ window.MapEngine = {
   },
 
   placeUserMarker(lat, lng) {
-    if (this.userMarker) this.map.removeLayer(this.userMarker);
-    this.userMarker = L.marker([lat, lng]).addTo(this.map).bindPopup("Votre position");
+    if (this.userMarker) this.userMarker.remove();
+    this.userMarker = new maplibregl.Marker({ color: "#c0392b" }).setLngLat([lng, lat]).setPopup(new maplibregl.Popup().setText("Votre position")).addTo(this.map);
   },
 
   changeCity(cityKey) {
     const city = window.FASTCOL_DATA.cities[cityKey];
     if (!city) return;
     window.FASTCOL_DATA.currentCity = cityKey;
+    if (window.Sos) window.Sos.render();
     window.FASTCOL_DATA.userPosition = { lat: city.lat, lng: city.lng, label: city.name };
     this.placeUserMarker(city.lat, city.lng);
-    this.map.setView([city.lat, city.lng], 13);
+    this.map.flyTo({ center: [city.lng, city.lat], zoom: 13 });
     this.searchNearby();
   },
 
@@ -71,7 +69,7 @@ window.MapEngine = {
         const lng = pos.coords.longitude;
         window.FASTCOL_DATA.userPosition = { lat: lat, lng: lng, label: "Position GPS" };
         this.placeUserMarker(lat, lng);
-        this.map.setView([lat, lng], 14);
+        this.map.flyTo({ center: [lng, lat], zoom: 14 });
         this.searchNearby();
       },
       () => {
@@ -158,12 +156,12 @@ window.MapEngine = {
   },
 
   drawMarkers() {
-    this.markers.forEach((marker) => this.map.removeLayer(marker));
+    this.markers.forEach((marker) => marker.remove());
     this.markers = [];
     this.results.forEach((item) => {
-      const marker = L.marker([item.lat, item.lng]).addTo(this.map);
-      marker.bindPopup("<strong>" + item.name + "</strong><br>" + (item.address || "Adresse non renseignée"));
-      marker.on("click", () => this.focusFacility(item.id));
+      const pop = new maplibregl.Popup({ offset: 24 }).setHTML("<strong>" + this.esc(item.name) + "</strong><br>" + this.esc(item.address || "Adresse non renseignée"));
+      const marker = new maplibregl.Marker({ color: item.type === "pharmacy" ? "#1b7f4c" : "#1c1c1c" }).setLngLat([item.lng, item.lat]).setPopup(pop).addTo(this.map);
+      marker.getElement().addEventListener("click", () => this.focusFacility(item.id));
       this.markers.push(marker);
     });
   },
@@ -217,20 +215,32 @@ window.MapEngine = {
     const item = this.findById(id);
     if (!item) return;
     this.selectedId = id;
-    this.map.setView([item.lat, item.lng], 15);
+    this.map.flyTo({ center: [item.lng, item.lat], zoom: 15 });
   },
 
-  routeTo(id) {
+  async routeTo(id) {
     const item = this.findById(id);
     if (!item || !this.map) return;
     this.selectedId = id;
-    if (this.routeLine) this.map.removeLayer(this.routeLine);
-    const start = window.FASTCOL_DATA.userPosition;
-    this.routeLine = L.polyline([[start.lat, start.lng], [item.lat, item.lng]], {
-      color: "#1c1c1c",
-      weight: 4
-    }).addTo(this.map);
-    this.map.fitBounds(this.routeLine.getBounds(), { padding: [40, 40] });
-    this.setStatus("Itinéraire vers " + item.name + " (" + item.distanceKm.toFixed(1) + " km).");
+    const s = window.FASTCOL_DATA.userPosition;
+    let coords = [[s.lng, s.lat], [item.lng, item.lat]];
+    let label = item.distanceKm.toFixed(1) + " km à vol d’oiseau";
+    try {
+      const r = await fetch("https://router.project-osrm.org/route/v1/driving/" + s.lng + "," + s.lat + ";" + item.lng + "," + item.lat + "?overview=full&geometries=geojson");
+      const d = await r.json();
+      if (d.routes && d.routes[0]) {
+        coords = d.routes[0].geometry.coordinates;
+        label = (d.routes[0].distance / 1000).toFixed(1) + " km, " + Math.round(d.routes[0].duration / 60) + " min en voiture";
+      }
+    } catch (err) { /* tracé direct */ }
+    if (!this.map.isStyleLoaded()) await new Promise((res) => this.map.once("load", res));
+    const geo = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
+    if (this.map.getSource("route")) this.map.getSource("route").setData(geo);
+    else {
+      this.map.addSource("route", { type: "geojson", data: geo });
+      this.map.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#1c1c1c", "line-width": 4 } });
+    }
+    this.map.fitBounds(coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0])), { padding: 50 });
+    this.setStatus("Itinéraire vers " + item.name + " (" + label + ").");
   }
 };

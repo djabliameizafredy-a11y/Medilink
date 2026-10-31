@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="assets/logo.png" />
   <title>Medilink</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,7 +14,7 @@
 <body>
   <nav class="navbar navbar-expand-lg">
     <div class="container">
-      <a class="navbar-brand" href="index.html">Medilink</a>
+      <a class="navbar-brand" href="index.html"><img src="assets/logo.png" alt="" width="40" height="39" /><span>Medilink</span></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -23,8 +24,6 @@
           <li class="nav-item"><a class="nav-link" href="hopitaux.html">Hôpitaux</a></li>
           <li class="nav-item"><a class="nav-link" href="pharmacies.html">Pharmacies</a></li>
           <li class="nav-item"><a class="nav-link" href="suivi.html">Suivi</a></li>
-          <li class="nav-item"><a class="nav-link" href="hopital.html">Espace hôpital</a></li>
-          <li class="nav-item"><a class="nav-link" href="admin.html">Administration</a></li>
         </ul>
       </div>
     </div>
@@ -32,6 +31,7 @@
 
   <header class="hero">
     <div class="container">
+      <div class="hero-panel">
       <p class="kicker">Orientation médicale</p>
       <h1>Un hôpital ou une pharmacie, près de vous.</h1>
       <p class="lead-quiet mt-4">Gemma recueille quelques informations, puis la carte OpenStreetMap montre les établissements autour de votre position. Vous choisissez ensuite d’appeler, de suivre un itinéraire ou d’envoyer une demande.</p>
@@ -39,6 +39,7 @@
         <a class="btn btn-primary" href="hopitaux.html">Chercher un hôpital</a>
         <a class="btn btn-outline-dark" href="pharmacies.html">Chercher une pharmacie</a>
       </div>
+    </div>
     </div>
   </header>
 

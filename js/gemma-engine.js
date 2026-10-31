@@ -1,9 +1,7 @@
 window.GemmaAssistant = {
-  apiKeyName: "Default Gemini API Key",
-  apiKey: localStorage.getItem("MEDILINK_GEMINI_API_KEY") || "AIzaSyASLHZIKW---LwLrOODKm9UosQukv4xePg",
-  models: ["gemma-3-27b-it", "gemini-2.0-flash", "gemini-1.5-flash"],
   mode: "hospital",
   step: 0,
+  history: [],
   hospitalContext: { patientName: "", condition: "", urgency: "", service: "", location: "" },
   pharmacyContext: { medication: "", urgent: "", condition: "", location: "" },
 
@@ -14,64 +12,55 @@ window.GemmaAssistant = {
   resetConversation(mode) {
     this.mode = mode;
     this.step = 0;
+    this.history = [];
     const feed = document.getElementById("gemma-chat-feed");
     if (feed) feed.innerHTML = "";
 
     if (mode === "hospital") {
       this.hospitalContext = { patientName: "", condition: "", urgency: "", service: "", location: "" };
       this.addBotMessage(
-        "Je suis Gemma. Pour lancer une recherche d’hôpital, j’ai besoin du nom du patient et du motif principal (douleur, fièvre, accident…).",
+        "Je suis Gemma. Pour vous orienter vers un hôpital, dites-moi le motif principal (douleur, fièvre, accident…). Vous pouvez aussi me poser n’importe quelle question de santé ou autre.",
         [
-          { label: "Douleur thoracique", value: "Je m’appelle Youssef, douleur thoracique" },
-          { label: "Fièvre chez un enfant", value: "Patient Sara, fièvre pédiatrique 39.5" },
-          { label: "Chute / traumatisme", value: "Karim, traumatisme après une chute" }
+          { label: "Douleur thoracique", value: "Douleur thoracique" },
+          { label: "Fièvre chez un enfant", value: "Fièvre chez un enfant" },
+          { label: "Chute / traumatisme", value: "Traumatisme après une chute" }
         ]
       );
     } else {
       this.pharmacyContext = { medication: "", urgent: "", condition: "", location: "" };
       this.addBotMessage(
-        "Je cherche une pharmacie autour de vous. Quel médicament vous faut-il ?",
+        "Je cherche une pharmacie autour de vous. Quel médicament vous faut-il ? Vous pouvez aussi me poser n’importe quelle question.",
         [
-          { label: "Ventoline", value: "Ventoline 100 µg" },
-          { label: "Insuline", value: "Insuline Lantus" },
-          { label: "Paracétamol", value: "Doliprane 1000mg" }
+          { label: "Ventoline", value: "Ventoline" },
+          { label: "Insuline", value: "Insuline" },
+          { label: "Paracétamol", value: "Paracétamol" }
         ]
       );
     }
   },
 
-  async callGoogleGenAI(userText) {
-    if (!this.apiKey) return null;
-    const ctx = this.mode === "hospital" ? this.hospitalContext : this.pharmacyContext;
-    const prompt = this.mode === "hospital"
-      ? "Tu es Gemma, assistante d’orientation médicale. Extraire patientName, condition, urgency (Critique|Élevée|Modérée|Standard), service, location. Contexte: " + JSON.stringify(ctx) + ". Réponds en JSON {patientName,condition,urgency,service,location,replyHtml}."
-      : "Tu es Gemma, assistante pharmacie. Extraire medication, urgent, condition, location. Contexte: " + JSON.stringify(ctx) + ". Réponds en JSON {medication,urgent,condition,location,replyHtml}.";
-
-    for (let i = 0; i < this.models.length; i++) {
-      try {
-        const response = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/" + this.models[i] + ":generateContent?key=" + encodeURIComponent(this.apiKey),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: prompt + "\nMessage: " + userText }] }],
-              generationConfig: { temperature: 0.3, maxOutputTokens: 350 }
-            })
-          }
-        );
-        if (!response.ok) continue;
-        const data = await response.json();
-        const raw = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]
-          ? data.candidates[0].content.parts[0].text
-          : "";
-        const match = raw && raw.match(/\{[\s\S]*\}/);
-        if (match) return JSON.parse(match[0]);
-      } catch (err) {
-        // Try next model
-      }
-    }
+  cityKey(t) {
+    const m = { lom: "lome", accra: "accra", cotonou: "cotonou", abidjan: "abidjan", dakar: "dakar" };
+    for (const k in m) if (t.indexOf(k) !== -1) return m[k];
     return null;
+  },
+
+  pendingPrompt() {
+    const asks = this.mode === "hospital"
+      ? ["Pour vous orienter vers un hôpital, quel est le motif, et pour qui ?", "Quel est le niveau d’urgence ?", "Où êtes-vous ? (ville ou position)"]
+      : ["Pour trouver une pharmacie, quel médicament cherchez-vous ?", "Est-ce urgent ?", "Pour quelle situation ?", "Où êtes-vous ? (ville ou position)"];
+    return this.step < asks.length ? "<br><br><em>" + asks[this.step] + "</em>" : "";
+  },
+
+  async callGoogleGenAI(userText) {
+    const ctx = this.mode === "hospital" ? this.hospitalContext : this.pharmacyContext;
+    try {
+      const r = await fetch("/api/gemma", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: this.mode, ctx: ctx, text: userText, history: this.history.slice(-8), step: this.step }) });
+      const j = r.ok ? await r.json() : null;
+      this.history.push({ role: "utilisateur", text: userText });
+      if (j && j.replyHtml) this.history.push({ role: "gemma", text: String(j.replyHtml).replace(/<[^>]*>/g, " ") });
+      return j;
+    } catch (e) { return null; }
   },
 
   async handleUserInput(rawText) {
@@ -88,6 +77,7 @@ window.GemmaAssistant = {
     const loading = this.addTypingIndicator();
     const ai = await this.callGoogleGenAI(text);
     if (loading) loading.remove();
+    if (ai && ai.intent === "question") { this.addBotMessage(ai.replyHtml + this.pendingPrompt()); return; }
     if (ai) {
       if (ai.patientName && !ctx.patientName) ctx.patientName = ai.patientName;
       if (ai.condition && !ctx.condition) ctx.condition = ai.condition;
@@ -97,7 +87,6 @@ window.GemmaAssistant = {
     }
 
     if (this.step === 0) {
-      ctx.patientName = ctx.patientName || text.split(",")[0].slice(0, 28);
       ctx.condition = ctx.condition || text;
       this.step = 1;
       this.addBotMessage((ai && ai.replyHtml ? ai.replyHtml + "<br><br>" : "") + "Quel est le niveau d’urgence ?", [
@@ -120,8 +109,8 @@ window.GemmaAssistant = {
       this.step = 2;
       this.addBotMessage((ai && ai.replyHtml ? ai.replyHtml + "<br><br>" : "") + "Indiquez votre ville, ou utilisez votre position pour lancer la recherche OpenStreetMap.", [
         { label: "Ma position", value: "Ma position GPS actuelle" },
-        { label: "Casablanca", value: "Casablanca" },
-        { label: "Rabat", value: "Rabat" }
+        { label: "Lomé", value: "Lomé" },
+        { label: "Accra", value: "Accra" }
       ]);
       return;
     }
@@ -130,7 +119,7 @@ window.GemmaAssistant = {
       ctx.location = ctx.location || text;
       this.step = 3;
       if (window.MapEngine) {
-        if (lower.indexOf("rabat") !== -1) window.MapEngine.changeCity("rabat");
+        if (this.cityKey(lower)) window.MapEngine.changeCity(this.cityKey(lower));
         else if (lower.indexOf("position") !== -1 || lower.indexOf("gps") !== -1) window.MapEngine.locateUser();
         else window.MapEngine.searchNearby();
       }
@@ -144,6 +133,7 @@ window.GemmaAssistant = {
     const loading = this.addTypingIndicator();
     const ai = await this.callGoogleGenAI(text);
     if (loading) loading.remove();
+    if (ai && ai.intent === "question") { this.addBotMessage(ai.replyHtml + this.pendingPrompt()); return; }
     if (ai) {
       if (ai.medication && !ctx.medication) ctx.medication = ai.medication;
       if (ai.urgent && this.step >= 1) ctx.urgent = ai.urgent;
@@ -177,8 +167,8 @@ window.GemmaAssistant = {
       this.step = 3;
       this.addBotMessage((ai && ai.replyHtml ? ai.replyHtml + "<br><br>" : "") + "Où devez-vous chercher la pharmacie ?", [
         { label: "Ma position", value: "Ma position GPS actuelle" },
-        { label: "Casablanca", value: "Casablanca" },
-        { label: "Rabat", value: "Rabat" }
+        { label: "Lomé", value: "Lomé" },
+        { label: "Accra", value: "Accra" }
       ]);
       return;
     }
@@ -187,7 +177,7 @@ window.GemmaAssistant = {
       ctx.location = ctx.location || text;
       this.step = 4;
       if (window.MapEngine) {
-        if (lower.indexOf("rabat") !== -1) window.MapEngine.changeCity("rabat");
+        if (this.cityKey(lower)) window.MapEngine.changeCity(this.cityKey(lower));
         else if (lower.indexOf("position") !== -1 || lower.indexOf("gps") !== -1) window.MapEngine.locateUser();
         else window.MapEngine.searchNearby();
       }

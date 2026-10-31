@@ -6,7 +6,7 @@
 
 window.GemmaAssistant = {
   apiKeyName: "Default Gemini API Key",
-  apiKey: localStorage.getItem("MEDILINK_GEMINI_API_KEY") || "AIzaSyASLHZIKW---LwLrOODKm9UosQukv4xePg",
+  apiKey: localStorage.getItem("MEDILINK_GEMINI_API_KEY") || "",
   models: ["gemma-3-27b-it", "gemini-2.0-flash", "gemini-1.5-flash"],
   activeModel: "gemma-3-27b-it / gemini-2.0-flash",
   useLiveApi: true,

@@ -1,5 +1,5 @@
 {
-  "name": "fastcol-cliniq-gemma-gps",
+  "name": "medilink",
   "version": "1.0.0",
   "description": "Plateforme web d'orientation médicale d'urgence, pharmacies de garde, suivi de prise en charge, tableau de bord hospitalier et administration avec assistant IA Gemma et GPS",
   "scripts": {

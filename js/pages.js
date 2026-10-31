@@ -1,11 +1,16 @@
 window.Pages = {
   activeRequestId: null,
 
+  esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  },
+
   initHome() {},
 
-  initSearchPage(kind) {
+  async initSearchPage(kind) {
     const types = kind === "pharmacy" ? ["pharmacy"] : ["hospital", "clinic"];
     window.GemmaAssistant.init(kind);
+    await window.MedilinkDB.load();
     window.MapEngine.init(kind === "pharmacy" ? "map-pharmacy" : "map-hospital", {
       listId: "facility-list",
       statusId: "map-status",
@@ -22,26 +27,27 @@ window.Pages = {
     const request = {
       id: "REQ-" + Date.now(),
       type: item.type === "pharmacy" ? "Pharmacie" : "Hôpital",
-      patientName: ctx.patientName || "Demandeur",
-      condition: ctx.condition || ctx.medication || "Demande d’orientation",
-      urgency: ctx.urgency || ctx.urgent || "Non précisé",
-      service: ctx.service || item.healthcare || item.type,
+      patientName: this.esc(ctx.patientName || "Demandeur"),
+      condition: this.esc(ctx.condition || ctx.medication || "Demande d’orientation"),
+      urgency: this.esc(ctx.urgency || ctx.urgent || "Non précisé"),
+      service: this.esc(ctx.service || item.healthcare || item.type),
       facilityId: item.id,
-      facilityName: item.name,
+      facilityName: this.esc(item.name),
       actionChosen: "Demande envoyée depuis la carte",
       status: "Envoyée",
       createdAt: "À l’instant",
       patientCoords: window.FASTCOL_DATA.userPosition.lat.toFixed(4) + ", " + window.FASTCOL_DATA.userPosition.lng.toFixed(4),
       patientPhone: "",
-      abuseScore: 3,
+      abuseScore: 0,
       flaggedAbusive: false,
       messages: [{
         sender: "Medilink",
         time: new Date().toTimeString().slice(0, 5),
-        text: "Demande transmise à " + item.name + "."
+        text: "Demande transmise à " + this.esc(item.name) + "."
       }]
     };
     window.FASTCOL_DATA.requests.unshift(request);
+    if (window.MedilinkDB) window.MedilinkDB.saveRequest(request.id, ctx, item, window.GemmaAssistant.mode);
     this.activeRequestId = request.id;
     sessionStorage.setItem("medilink-active-request", request.id);
     window.location.href = "suivi.html";
@@ -52,12 +58,18 @@ window.Pages = {
   },
 
   initTracking() {
-    this.activeRequestId = sessionStorage.getItem("medilink-active-request") || window.FASTCOL_DATA.requests[0].id;
+    this.activeRequestId = sessionStorage.getItem("medilink-active-request") || (window.FASTCOL_DATA.requests[0] || {}).id;
     this.renderTracking();
   },
 
   renderTracking() {
     const req = this.requestById(this.activeRequestId);
+    if (!req) {
+      ["request-select", "status-stepper", "request-messages"].forEach((i) => { const e = document.getElementById(i); if (e) e.innerHTML = ""; });
+      const dd = document.getElementById("request-details");
+      if (dd) dd.innerHTML = "<p class='meta mb-0'>Aucune demande pour le moment. Lancez une recherche, puis envoyez une demande à un établissement.</p>";
+      return;
+    }
     const statuses = ["Envoyée", "Reçue", "En cours de coordination", "Clôturée"];
     const index = Math.max(0, statuses.indexOf(req.status));
     const select = document.getElementById("request-select");
@@ -99,7 +111,7 @@ window.Pages = {
     req.messages.push({
       sender: req.patientName,
       time: new Date().toTimeString().slice(0, 5),
-      text: input.value.trim()
+      text: this.esc(input.value.trim())
     });
     input.value = "";
     this.renderTracking();
@@ -107,6 +119,7 @@ window.Pages = {
 
   advanceStatus() {
     const req = this.requestById(this.activeRequestId);
+    if (!req) return;
     const order = ["Envoyée", "Reçue", "En cours de coordination", "Clôturée"];
     const next = order[Math.min(order.length - 1, order.indexOf(req.status) + 1)];
     req.status = next;
@@ -119,7 +132,7 @@ window.Pages = {
   },
 
   initHospital() {
-    this.activeRequestId = window.FASTCOL_DATA.requests[0].id;
+    this.activeRequestId = (window.FASTCOL_DATA.requests[0] || {}).id;
     this.renderHospital();
   },
 
@@ -127,6 +140,11 @@ window.Pages = {
     const req = this.requestById(this.activeRequestId);
     const list = document.getElementById("hospital-requests");
     const detail = document.getElementById("hospital-detail");
+    if (!req) {
+      if (list) list.innerHTML = "";
+      if (detail) detail.innerHTML = "<p class='meta mb-0'>Aucune demande reçue pour le moment.</p>";
+      return;
+    }
     if (list) {
       list.innerHTML = window.FASTCOL_DATA.requests.map((r) =>
         "<button type='button' class='list-group-item list-group-item-action " + (r.id === req.id ? "active" : "") + "' onclick=\"Pages.selectHospital('" + r.id + "')\">" +
@@ -155,6 +173,7 @@ window.Pages = {
 
   setHospitalStatus(id, status) {
     const req = this.requestById(id);
+    if (!req) return;
     req.status = status;
     req.messages.push({
       sender: "Personnel hospitalier",
@@ -167,18 +186,18 @@ window.Pages = {
   sendHospitalMessage() {
     const input = document.getElementById("hospital-message");
     const req = this.requestById(this.activeRequestId);
-    if (!input || !input.value.trim()) return;
+    if (!input || !input.value.trim() || !req) return;
     req.messages.push({
       sender: "Personnel hospitalier",
       time: new Date().toTimeString().slice(0, 5),
-      text: input.value.trim()
+      text: this.esc(input.value.trim())
     });
     input.value = "";
     this.renderHospital();
   },
 
   updateHospitalAvailability() {
-    const hospital = window.FASTCOL_DATA.hospitals[0];
+    const hospital = window.FASTCOL_DATA.hospitals[0] || { name: "votre établissement" };
     const status = document.getElementById("avail-status");
     const beds = document.getElementById("avail-beds");
     const amb = document.getElementById("avail-amb");
