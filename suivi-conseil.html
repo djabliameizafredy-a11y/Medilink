@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="assets/logo.png" />
-  <title>Suivi — Medilink</title>
+  <title>Suivi conseil — Medilink</title>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="css/app.css" rel="stylesheet" />
@@ -19,7 +19,9 @@
           <li class="nav-item"><a class="nav-link" href="index.html">Accueil</a></li>
           <li class="nav-item"><a class="nav-link" href="hopitaux.html">Hôpitaux</a></li>
           <li class="nav-item"><a class="nav-link" href="pharmacies.html">Pharmacies</a></li>
-          <li class="nav-item"><a class="nav-link active" href="suivi.html">Suivi</a></li>
+          <li class="nav-item"><a class="nav-link" href="actualites.html">Actualités santé</a></li>
+          <li class="nav-item"><a class="nav-link active" href="suivi-conseil.html">Suivi conseil</a></li>
+          <li class="nav-item"><a class="nav-link" href="apropos.html">À propos</a></li>
         </ul>
       </div>
     </div>
@@ -27,34 +29,26 @@
 
   <header class="page-head">
     <div class="container">
-      <h1>Suivi de la demande</h1>
-      <p>Envoyée, reçue, en cours de coordination, ou clôturée.</p>
+      <h1>Suivi conseil</h1>
+      <p>Retrouvez les professionnels de santé près de vous, puis échangez avec eux pour des conseils et un suivi.</p>
     </div>
   </header>
 
   <main class="container pb-5">
-    <div class="mb-4" style="max-width:28rem">
-      <label class="form-label meta" for="request-select">Demande</label>
-      <select id="request-select" class="form-select" onchange="Pages.selectTracking(this.value)"></select>
-    </div>
-    <div id="status-stepper" class="row g-3 mb-4"></div>
-    <div class="panel p-3 mb-4">
-      <div id="request-details"></div>
-    </div>
-    <div class="panel p-3">
-      <h2 class="h5">Messages</h2>
-      <div id="request-messages" class="my-3"></div>
-      <div class="input-group">
-        <input id="tracking-message" class="form-control" placeholder="Écrire à l’établissement" />
-        <button class="btn btn-primary" type="button" onclick="Pages.sendTrackingMessage()">Envoyer</button>
+    <section class="panel p-4 mb-4" aria-labelledby="soon">
+      <span class="badge text-bg-light border">Fonctionnalité à venir</span>
+      <h2 id="soon" class="h4 mt-2">Conseils et suivi avec des professionnels</h2>
+      <p>Bientôt, après une recherche à proximité, chaque établissement affichera ses professionnels de santé : photo, domaine, spécialité et expérience.</p>
+      <div class="row g-3">
+        <div class="col-md-4"><h3 class="h6">Trouver</h3><p class="meta mb-0">Retrouver les professionnels de chaque établissement proche de vous.</p></div>
+        <div class="col-md-4"><h3 class="h6">Filtrer et chercher</h3><p class="meta mb-0">Filtrer par domaine, spécialité ou établissement, ou chercher un nom.</p></div>
+        <div class="col-md-4"><h3 class="h6">Discuter</h3><p class="meta mb-0">Échanger par messages pour obtenir des conseils et un suivi après votre visite.</p></div>
       </div>
-      <button class="btn btn-outline-dark btn-sm mt-3" type="button" onclick="Pages.advanceStatus()">Faire avancer le statut</button>
-    </div>
+      <p class="meta mt-3 mb-0">Cette messagerie ne remplace pas les secours. En cas d’urgence, appelez immédiatement les numéros d’urgence de votre pays.</p>
+    </section>
+
   </main>
   <footer class="site-footer"><div class="container">Medilink</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="data.js"></script>
-  <script src="js/pages.js"></script>
-  <script>document.addEventListener("DOMContentLoaded", function () { Pages.initTracking(); });</script>
 </body>
 </html>

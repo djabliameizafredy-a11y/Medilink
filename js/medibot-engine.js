@@ -1,4 +1,4 @@
-window.GemmaAssistant = {
+window.MediBot = {
   mode: "hospital",
   step: 0,
   history: [],
@@ -13,13 +13,13 @@ window.GemmaAssistant = {
     this.mode = mode;
     this.step = 0;
     this.history = [];
-    const feed = document.getElementById("gemma-chat-feed");
+    const feed = document.getElementById("medibot-chat-feed");
     if (feed) feed.innerHTML = "";
 
     if (mode === "hospital") {
       this.hospitalContext = { patientName: "", condition: "", urgency: "", service: "", location: "" };
       this.addBotMessage(
-        "Je suis Gemma. Pour vous orienter vers un hôpital, dites-moi le motif principal (douleur, fièvre, accident…). Vous pouvez aussi me poser n’importe quelle question de santé ou autre.",
+        "Je suis MediBot. Pour vous orienter vers un hôpital, dites-moi le motif principal (douleur, fièvre, accident…). Vous pouvez aussi me poser n’importe quelle question de santé ou autre.",
         [
           { label: "Douleur thoracique", value: "Douleur thoracique" },
           { label: "Fièvre chez un enfant", value: "Fièvre chez un enfant" },
@@ -55,10 +55,10 @@ window.GemmaAssistant = {
   async callGoogleGenAI(userText) {
     const ctx = this.mode === "hospital" ? this.hospitalContext : this.pharmacyContext;
     try {
-      const r = await fetch("/api/gemma", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: this.mode, ctx: ctx, text: userText, history: this.history.slice(-8), step: this.step }) });
+      const r = await fetch("/api/medibot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: this.mode, ctx: ctx, text: userText, history: this.history.slice(-8), step: this.step }) });
       const j = r.ok ? await r.json() : null;
       this.history.push({ role: "utilisateur", text: userText });
-      if (j && j.replyHtml) this.history.push({ role: "gemma", text: String(j.replyHtml).replace(/<[^>]*>/g, " ") });
+      if (j && j.replyHtml) this.history.push({ role: "medibot", text: String(j.replyHtml).replace(/<[^>]*>/g, " ") });
       return j;
     } catch (e) { return null; }
   },
@@ -186,25 +186,25 @@ window.GemmaAssistant = {
   },
 
   addTypingIndicator() {
-    const feed = document.getElementById("gemma-chat-feed");
+    const feed = document.getElementById("medibot-chat-feed");
     if (!feed) return null;
     const el = document.createElement("div");
     el.className = "chat-msg bot";
-    el.textContent = "Gemma rédige une réponse…";
+    el.textContent = "MediBot rédige une réponse…";
     feed.appendChild(el);
     feed.scrollTop = feed.scrollHeight;
     return el;
   },
 
   addBotMessage(html, options) {
-    const feed = document.getElementById("gemma-chat-feed");
+    const feed = document.getElementById("medibot-chat-feed");
     if (!feed) return;
     const el = document.createElement("div");
     el.className = "chat-msg bot";
     let buttons = "";
     if (options && options.length) {
       buttons = "<div class='d-flex flex-wrap gap-2 mt-2'>" + options.map((opt) =>
-        "<button type='button' class='btn btn-sm btn-outline-dark' onclick=\"GemmaAssistant.handleUserInput('" + opt.value.replace(/'/g, "\\'") + "')\">" + opt.label + "</button>"
+        "<button type='button' class='btn btn-sm btn-outline-dark' onclick=\"MediBot.handleUserInput('" + opt.value.replace(/'/g, "\\'") + "')\">" + opt.label + "</button>"
       ).join("") + "</div>";
     }
     el.innerHTML = html + buttons;
@@ -213,7 +213,7 @@ window.GemmaAssistant = {
   },
 
   addUserMessage(text) {
-    const feed = document.getElementById("gemma-chat-feed");
+    const feed = document.getElementById("medibot-chat-feed");
     if (!feed) return;
     const el = document.createElement("div");
     el.className = "chat-msg user";

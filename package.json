@@ -1,7 +1,7 @@
 {
   "name": "medilink",
   "version": "1.0.0",
-  "description": "Plateforme web d'orientation médicale d'urgence, pharmacies de garde, suivi de prise en charge, tableau de bord hospitalier et administration avec assistant IA Gemma et GPS",
+  "description": "Plateforme web d'orientation médicale d'urgence, pharmacies de garde, suivi de prise en charge, tableau de bord hospitalier et administration avec bot IA MediBot et GPS",
   "scripts": {
     "start": "npx serve . -l 3000",
     "dev": "npx serve . -l 3000"

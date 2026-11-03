@@ -1,0 +1,4 @@
+{
+  "redirects": [{ "source": "/suivi.html", "destination": "/suivi-conseil.html", "permanent": true }],
+  "functions": { "api/ingest.js": { "maxDuration": 60 } }
+}

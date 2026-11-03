@@ -48,3 +48,25 @@ create policy "profil personnel" on profiles for select using (id = auth.uid());
 create function suivre_demande(c text) returns table(status text, facility text, created_at timestamptz)
 language sql security definer as $$
   select r.status, f.name, r.created_at from requests r left join facilities f on f.id = r.facility_id where r.code = c $$;
+
+-- Professionnels de santé par établissement. Visibles du public seulement après validation par un admin.
+create table professionals (
+  id uuid primary key default gen_random_uuid(),
+  facility_id uuid not null references facilities(id) on delete cascade,
+  full_name text not null, domain text, specialty text,
+  experience_years int check (experience_years between 0 and 70),
+  bio text, photo_path text,
+  status text not null default 'pending' check (status in ('pending','approved','hidden')),
+  created_at timestamptz default now()
+);
+alter table professionals enable row level security;
+create policy "public : profils approuvés" on professionals for select using (status = 'approved');
+create policy "établissement : gérer les siens" on professionals for all
+  using (exists (select 1 from profiles p where p.id = auth.uid() and (p.role = 'admin' or p.facility_id = professionals.facility_id)))
+  with check (exists (select 1 from profiles p where p.id = auth.uid()
+    and (p.role = 'admin' or (p.facility_id = professionals.facility_id and professionals.status in ('pending','hidden')))));
+insert into storage.buckets (id, name, public) values ('professionals', 'professionals', true) on conflict do nothing;
+create policy "photos : lecture publique" on storage.objects for select using (bucket_id = 'professionals');
+create policy "photos : dépôt par l'établissement" on storage.objects for insert to authenticated
+  with check (bucket_id = 'professionals' and exists (select 1 from profiles p where p.id = auth.uid()
+    and (p.role = 'admin' or p.facility_id::text = (storage.foldername(name))[1])));

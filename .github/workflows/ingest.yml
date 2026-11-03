@@ -1,0 +1,18 @@
+name: Actualisation du fil santé
+on:
+  schedule:
+    - cron: "17 * * * *"   # toutes les heures (UTC) ; GitHub peut retarder une exécution
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler l'ingestion
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 120 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" "$INGEST_URL"

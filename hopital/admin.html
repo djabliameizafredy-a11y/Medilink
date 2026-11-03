@@ -39,8 +39,23 @@
         <tbody id="rows"></tbody>
       </table></div>
     </section>
+    <section id="pros" class="mt-5" hidden>
+      <h2 class="h4">Professionnels de l’établissement</h2>
+      <p class="meta">Chaque profil est vérifié par Medilink avant d’être visible par les patients. Enregistrez uniquement des personnes qui ont donné leur accord, y compris pour leur photo.</p>
+      <form id="pform" class="row g-2 mb-3">
+        <div class="col-md-6"><label for="pn" class="meta">Nom complet</label><input id="pn" class="form-control" required maxlength="80" /></div>
+        <div class="col-md-6"><label for="pd" class="meta">Domaine</label><input id="pd" class="form-control" required maxlength="60" placeholder="Médecine générale, pharmacie…" /></div>
+        <div class="col-md-6"><label for="ps" class="meta">Spécialité</label><input id="ps" class="form-control" maxlength="60" /></div>
+        <div class="col-md-6"><label for="pe" class="meta">Années d’expérience</label><input id="pe" class="form-control" type="number" min="0" max="70" /></div>
+        <div class="col-12"><label for="pb" class="meta">Présentation</label><textarea id="pb" class="form-control" rows="2" maxlength="400"></textarea></div>
+        <div class="col-12"><label for="pp" class="meta">Photo (JPEG ou PNG, 2 Mo maximum)</label><input id="pp" class="form-control" type="file" accept="image/jpeg,image/png" /></div>
+        <div class="col-12"><p id="perr" class="meta mb-1" role="alert"></p><button class="btn btn-primary" type="submit">Enregistrer le professionnel</button></div>
+      </form>
+      <div id="plist"></div>
+    </section>
   </main>
   <script src="../js/config.js"></script>
+  <script src="../js/avatar.js"></script>
   <script src="../js/staff.js"></script>
 </body>
 </html>
