@@ -59,7 +59,7 @@ Connexion obligatoire, rôle `admin` exigé. Pour créer le compte : Supabase �
 
 ## Sécurité
 - Une ancienne clé Gemini a été publique dans l'historique Git : elle doit être **révoquée**.
-- Les espaces hôpital, pharmacie et administration utilisent Supabase Auth. L'administration exige aussi un profil avec le rôle `admin`.
+- L'espace hôpital et l'administration n'ont pas encore d'authentification (prévu avec Supabase Auth).
 - Les textes saisis sont échappés avant affichage.
 
 ## Feuille de route
