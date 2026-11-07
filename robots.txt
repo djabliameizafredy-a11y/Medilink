@@ -1,4 +1,2 @@
 User-agent: *
-Disallow: /hopital/
-Disallow: /pharmacie/
-Disallow: /admin.html
+Allow: /

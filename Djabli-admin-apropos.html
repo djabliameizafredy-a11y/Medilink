@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="assets/logo.png" />
+  <title>Aide administration | Medilink</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="css/app.css" rel="stylesheet" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <span class="navbar-brand"><img src="assets/logo.png" alt="" width="40" height="39" /><span>Medilink, administration</span></span>
+      <a class="btn btn-sm btn-outline-dark" href="Djabli-admin.html">Retour au tableau de bord</a>
+    </div>
+  </nav>
+  <main class="container py-4" style="max-width:46rem">
+    <h1>Utiliser la page d’administration</h1>
+    <p class="meta">Cette page explique <code>Djabli-admin.html</code>. Elle sera complétée à chaque nouvelle section.</p>
+
+    <h2 class="h4 mt-4">À quoi sert-elle ?</h2>
+    <p>Elle réunit le suivi du site en un seul endroit : des statistiques, l’accès à toutes les pages, et bientôt la gestion des établissements, des professionnels, des données de test et des paramètres.</p>
+
+    <h2 class="h4 mt-4">Se connecter</h2>
+    <p>Il faut un compte administrateur créé dans Supabase (Authentication, puis un profil avec le rôle « admin »). Les étapes exactes sont dans le fichier <code>README.md</code>. Désactivez aussi l’inscription publique dans les réglages d’authentification de Supabase. Un compte sans le rôle administrateur est refusé, même avec le bon mot de passe.</p>
+
+    <h2 class="h4 mt-4">Lire le tableau de bord</h2>
+    <ul>
+      <li><strong>Demandes reçues</strong> et <strong>7 derniers jours</strong> : les demandes envoyées par les patients aux établissements.</li>
+      <li><strong>Établissements</strong> et <strong>vérifiés</strong> : les établissements de la base Medilink, dont ceux confirmés auprès de l’établissement.</li>
+      <li><strong>Professionnels en attente</strong> : les profils enregistrés par les établissements et pas encore approuvés. Ils restent invisibles au public.</li>
+      <li><strong>Articles du fil santé</strong> et <strong>dernière actualisation</strong> : le contenu de la page Actualités santé.</li>
+      <li>Un tiret (—) signifie que la donnée est indisponible : base non configurée ou table pas encore créée. Ce n’est pas un zéro.</li>
+    </ul>
+
+    <h2 class="h4 mt-4">Les boutons de pages</h2>
+    <p>Ils ouvrent chaque page du site, y compris les espaces réservés au personnel des hôpitaux et des pharmacies.</p>
+
+    <h2 class="h4 mt-4">Sections à venir</h2>
+    <ul>
+      <li><strong>Établissements affichés au public</strong> : voir, corriger et vérifier les établissements que voient les visiteurs.</li>
+      <li><strong>Approuver les professionnels</strong> : valider les profils avant leur affichage.</li>
+      <li><strong>Laboratoire de test</strong> : des données d’exemple clairement marquées, visibles seulement par l’administrateur, jamais par le public.</li>
+      <li><strong>Paramètres</strong> : réglages du site.</li>
+    </ul>
+
+    <h2 class="h4 mt-4">Sécurité</h2>
+    <ul>
+      <li>L’adresse de cette page n’est pas un secret : la protection vient de la connexion et des règles de la base de données.</li>
+      <li>Utilisez un mot de passe long et unique, et déconnectez-vous après usage.</li>
+      <li>Ne placez jamais une clé « service_role » dans le site ou dans le dépôt.</li>
+    </ul>
+
+    <h2 class="h4 mt-4">Messages d’erreur</h2>
+    <ul>
+      <li><strong>Connexion non configurée</strong> : renseignez <code>js/config.js</code>.</li>
+      <li><strong>Identifiants incorrects</strong> : vérifiez l’e-mail et le mot de passe.</li>
+      <li><strong>Ce compte n’a pas accès</strong> : le profil n’a pas le rôle administrateur.</li>
+    </ul>
+  </main>
+</body>
+</html>

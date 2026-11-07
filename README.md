@@ -8,6 +8,7 @@ Plateforme d'orientation médicale : trouver un hôpital ou une pharmacie proche
 - Recherche d'hôpitaux et de pharmacies autour de la position de l'utilisateur (OpenStreetMap via Overpass).
 - Carte **MapLibre GL JS + OpenFreeMap** (sans clé API) et itinéraire routier (OSRM, service de démonstration).
 - Bot **MediBot** (Gemini, API Interactions) : répond à toute question (santé et autre) et, en priorité, recueille motif, urgence et localisation pour orienter vers un établissement. Mode de secours sans IA.
+- Dictée vocale dans le chat (`js/voice.js`, API Web Speech du navigateur, français) : le texte reconnu est relu avant envoi. Non disponible sur Firefox.
 - Aucune donnée d'exemple : les établissements viennent d'OpenStreetMap et de Supabase, les demandes sont créées par les utilisateurs.
 - Suivi conseil (annuaire des professionnels et messagerie : à venir), suivi des demandes, page À propos.
 - Espaces pro : historique des demandes et enregistrement des professionnels (validés par un admin avant affichage).
@@ -18,7 +19,7 @@ Plateforme d'orientation médicale : trouver un hôpital ou une pharmacie proche
 |---|---|
 | `index.html`, `hopitaux.html`, `pharmacies.html`, `suivi-conseil.html`, `apropos.html` | Pages publiques (clients) |
 | `hopital/admin.html`, `pharmacie/admin.html`, `js/staff.js` | Espaces professionnels séparés : connexion obligatoire, historique des demandes en lecture seule |
-| `admin.html` | Ancienne administration globale (non liée, à décider) |
+| `Djabli-admin.html`, `Djabli-admin-apropos.html`, `js/admin.js` | Administration : connexion admin, tableau de bord, aide |
 | `css/app.css` | Styles (vert du logo + noir) |
 | `assets/` | Logo et image du hero |
 | `data.js` | Villes, numéros d'urgence vérifiés |
@@ -38,8 +39,7 @@ Vercel → Settings → Environment Variables :
 Puis redéployer. Sans clé, MediBot fonctionne en mode de secours.
 
 ### 2. Supabase (données vérifiées)
-1. Exécuter `supabase/schema.sql` dans le SQL Editor.
-2. Renseigner `js/config.js` : `supabaseUrl` et `supabaseAnonKey` (clé « anon » uniquement).
+Le projet `medilink` existe déjà et `js/config.js` le référence (clé « anon » uniquement). `supabase/schema.sql` et `supabase/feed.sql` décrivent ce qui y est appliqué. Pour un nouveau projet, les exécuter dans cet ordre.
 3. **Jamais** la clé `service_role` dans le dépôt.
 
 Sans configuration, le site utilise OpenStreetMap seul.
@@ -54,16 +54,20 @@ Page `actualites.html`. Trois sources : MedlinePlus (service web officiel, résu
 - Actualisation : secrets GitHub `INGEST_URL` (`https://<site>/api/ingest`) et `CRON_SECRET` (même valeur que dans Vercel). `.github/workflows/ingest.yml` s'exécute toutes les heures. Vercel gratuit ne permet qu'une tâche planifiée par jour.
 - Intérêts et articles enregistrés : stockés dans le navigateur (`localStorage`), jamais envoyés au serveur.
 
+## Administration (`Djabli-admin.html`)
+Connexion obligatoire, rôle `admin` exigé. Pour créer le compte : Supabase → Authentication → Users → Add user ; puis, dans le SQL Editor : `insert into profiles (id, role) values ('<id de l''utilisateur>', 'admin');`. Désactiver l'inscription publique (Authentication → Sign In / Providers). Aide : `Djabli-admin-apropos.html`.
+
 ## Sécurité
 - Une ancienne clé Gemini a été publique dans l'historique Git : elle doit être **révoquée**.
-- L'espace hôpital et l'administration n'ont pas encore d'authentification (prévu avec Supabase Auth).
+- Les espaces hôpital, pharmacie et administration utilisent Supabase Auth. L'administration exige aussi un profil avec le rôle `admin`.
 - Les textes saisis sont échappés avant affichage.
 
 ## Feuille de route
 - [x] Interface, logo, hero, Lomé et Afrique de l'Ouest
 - [x] MapLibre + OpenFreeMap, itinéraire routier
 - [x] Clé Gemini côté serveur, API Interactions
-- [ ] Tables Supabase créées et demandes de suivi persistantes
+- [x] Projet Supabase créé (Paris), tables et règles d'accès appliquées, vérifiées par le conseiller de sécurité
+- [ ] Demandes enregistrées de bout en bout (test réel après déploiement)
 - [ ] Connexion du personnel et de l'admin
 - [ ] Synchronisation automatique des établissements (tâche programmée)
 - [ ] Voix dans le navigateur
