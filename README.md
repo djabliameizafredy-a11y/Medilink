@@ -57,6 +57,11 @@ Page `actualites.html`. Trois sources : MedlinePlus (service web officiel, résu
 ## Administration (`Djabli-admin.html`)
 Connexion obligatoire, rôle `admin` exigé. Pour créer le compte : Supabase → Authentication → Users → Add user ; puis, dans le SQL Editor : `insert into profiles (id, role) values ('<id de l''utilisateur>', 'admin');`. Désactiver l'inscription publique (Authentication → Sign In / Providers). Aide : `Djabli-admin-apropos.html`.
 
+## Si ça ne marche pas : diagnostic
+1. Ouvrir `https://<site>/api/status` : indique si `GEMINI_API_KEY`, la clé serveur Supabase et `CRON_SECRET` sont bien vus par le site (oui/non, jamais les valeurs). Une variable ajoutée dans Vercel n'est prise en compte qu'après un **nouveau déploiement**.
+2. Dans `Djabli-admin.html` : **Vérifier la configuration** teste chaque service pour de vrai ; **Actualiser le fil maintenant** remplit le fil sans passer par GitHub Actions.
+3. Une erreur 404 sur `/api/...` signifie que la dernière version (dossier `api/`) n'est pas déployée.
+
 ## Sécurité
 - Une ancienne clé Gemini a été publique dans l'historique Git : elle doit être **révoquée**.
 - L'espace hôpital et l'administration n'ont pas encore d'authentification (prévu avec Supabase Auth).

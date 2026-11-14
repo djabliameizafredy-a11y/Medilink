@@ -1,6 +1,7 @@
 // Ingestion du fil santé. Appelée par GitHub Actions (toutes les heures) avec « Authorization: Bearer CRON_SECRET ».
 const crypto = require("crypto");
 const { clean, httpsUrl, getText, CATS, normEpmc, epmcSearch } = require("./_lib");
+const { adminOf } = require("./_auth");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // MedlinePlus : service web officiel, uniquement les pages « sujets de santé » (résumés du domaine public).
@@ -67,8 +68,9 @@ async function upsert(rows) {
 const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 module.exports = async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (!secret || !same(req.headers.authorization || "", "Bearer " + secret)) return res.status(401).json({ error: "non autorisé" });
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return res.status(503).json({ error: "base non configurée" });
+  const okCron = secret && same(req.headers.authorization || "", "Bearer " + secret);
+  if (!okCron && !(await adminOf(req))) return res.status(401).json({ error: "non autorisé" });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return res.status(503).json({ error: "base non configurée : SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquant" });
   const out = {};
   await Promise.all([["medlineplus", ingestMedline], ["europe_pmc", ingestEpmc], ["institutions", ingestFeeds]].map(async ([k, fn]) => {
     try { out[k] = await upsert(await fn()); } catch (e) { out[k] = "erreur : " + e.message; } // une source en panne n'arrête pas les autres

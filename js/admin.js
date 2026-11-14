@@ -50,6 +50,33 @@
       show("dash"); stats();
     } catch (e) { if (S) { $("err").textContent = "Chargement impossible."; show("login"); } }
   }
+  function lines(items) {
+    $("chkout").replaceChildren.apply($("chkout"), items.map(function (t) { var li = document.createElement("li"); li.textContent = t; return li; }));
+  }
+  async function call(path, method) {
+    var r = await fetch(path, { method: method, headers: { Authorization: "Bearer " + S.token } });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    return { ok: r.ok, status: r.status, body: j };
+  }
+  $("chk").onclick = async function () {
+    lines(["Vérification en cours…"]);
+    try {
+      var r = await call("/api/admin", "GET");
+      if (r.status === 404) return lines(["Le site en ligne n’a pas encore les fonctions serveur : poussez la dernière version sur GitHub, puis redéployez."]);
+      if (!r.ok) return lines(["Refusé (" + r.status + "). Reconnectez-vous."]);
+      lines(r.body.checks.map(function (c) { return (c.ok ? "OK : " : "À corriger : ") + c.nom + (c.detail ? " (" + c.detail + ")" : ""); }));
+    } catch (e) { lines(["Vérification impossible depuis cette page (ouverte hors du site déployé ?)."]); }
+  };
+  $("ing").onclick = async function () {
+    var b = this; b.disabled = true; lines(["Actualisation en cours, cela peut prendre une minute…"]);
+    try {
+      var r = await call("/api/ingest", "POST");
+      if (r.status === 404) lines(["Le site en ligne n’a pas encore les fonctions serveur : poussez la dernière version sur GitHub, puis redéployez."]);
+      else if (!r.ok) lines(["Échec (" + r.status + ") : " + (r.body.error || "erreur inconnue")]);
+      else lines(Object.keys(r.body).map(function (k) { return k + " : " + r.body[k] + (typeof r.body[k] === "number" ? " article(s)" : ""); }));
+    } catch (e) { lines(["Actualisation impossible depuis cette page."]); }
+    b.disabled = false; stats();
+  };
   $("form").onsubmit = async function (e) {
     e.preventDefault(); $("err").textContent = "";
     if (!C.supabaseUrl || !C.supabaseAnonKey) { $("err").textContent = "Connexion non configurée."; return; }

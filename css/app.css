@@ -212,3 +212,19 @@ a {
 /* ---- Actualités santé ---- */
 .article-card { border: 1px solid var(--line); background: #fff; padding: 1rem; height: 100%; }
 .article-card h3 { font-size: 1.15rem; line-height: 1.25; }
+
+/* ---- MediBot : bille verte dans le coin du chat ---- */
+.medibot-orb { position: absolute; top: -18px; right: 14px; width: 56px; height: 56px; pointer-events: none; animation: mb-float 5s ease-in-out infinite; filter: drop-shadow(0 8px 10px rgba(139, 195, 74, 0.35)); }
+.medibot-orb svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.medibot-orb .eye { transform-box: fill-box; transform-origin: center; animation: mb-blink 5s infinite; }
+.medibot-orb .brows { opacity: 0; }
+.medibot-orb[data-state="thinking"] .eyes { animation: mb-look 1.6s ease-in-out infinite; }
+.medibot-orb[data-state="listening"] .eye { animation: none; transform: scaleY(1.25); }
+.medibot-orb[data-state="listening"]::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--green); animation: mb-ping 1.2s ease-out infinite; }
+.medibot-orb[data-state="alert"] .brows { opacity: 1; }
+.medibot-orb[data-state="alert"] .eye { animation: none; transform: scaleY(0.85); }
+@keyframes mb-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes mb-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes mb-look { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+@keyframes mb-ping { 0% { transform: scale(0.9); opacity: 0.8; } 100% { transform: scale(1.25); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .medibot-orb, .medibot-orb .eye, .medibot-orb .eyes, .medibot-orb::after { animation: none !important; } }

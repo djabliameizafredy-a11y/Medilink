@@ -18,8 +18,8 @@
     </div>
   </nav>
   <main class="container py-4">
-    <section id="login" class="panel p-4" style="max-width:26rem">
-      <h1 class="h4">Connexion administrateur</h1>
+    <section id="login" class="panel p-4 mx-auto" style="max-width:26rem;margin-top:8vh">
+      <h1 class="h4 text-center">Connexion administrateur</h1>
       <form id="form" class="d-flex flex-column gap-2">
         <label for="email" class="meta">Adresse e-mail</label>
         <input id="email" class="form-control" type="email" autocomplete="username" required />
@@ -28,7 +28,7 @@
         <p id="err" class="meta mb-0" role="alert"></p>
         <button class="btn btn-primary" type="submit">Se connecter</button>
       </form>
-      <p class="meta mt-3 mb-0"><a href="Djabli-admin-apropos.html">Comment utiliser cette page</a></p>
+      <p class="meta mt-3 mb-0 text-center"><a href="Djabli-admin-apropos.html">Comment utiliser cette page</a></p>
     </section>
     <section id="denied" class="panel p-4" hidden><p class="mb-0">Ce compte n’a pas accès à l’administration.</p></section>
 
@@ -38,6 +38,13 @@
       <h2 class="h5 mt-4">Statistiques</h2>
       <div id="stats" class="row g-3"></div>
       <p id="statnote" class="meta mt-2" role="status"></p>
+
+      <h2 class="h5 mt-4">État du système</h2>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button id="chk" class="btn btn-outline-dark" type="button">Vérifier la configuration</button>
+        <button id="ing" class="btn btn-primary" type="button">Actualiser le fil maintenant</button>
+      </div>
+      <ul id="chkout" class="list-unstyled meta" role="status"></ul>
 
       <h2 class="h5 mt-4">Pages du site</h2>
       <div class="d-flex flex-wrap gap-2">

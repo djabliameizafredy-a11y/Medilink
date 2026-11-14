@@ -25,7 +25,7 @@
     if (rec) { rec.stop(); return; }
     failed = false; base = input.value.trim() ? input.value.trim() + " " : "";
     rec = new SR(); rec.lang = "fr-FR"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
-    rec.onstart = function () { mark(true); note.textContent = "Je vous écoute… L’audio est traité par le service de reconnaissance de votre navigateur."; };
+    rec.onstart = function () { document.dispatchEvent(new CustomEvent("medibot-state", { detail: "listening" })); mark(true); note.textContent = "Je vous écoute… L’audio est traité par le service de reconnaissance de votre navigateur."; };
     rec.onresult = function (e) {
       var t = "";
       for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
@@ -33,6 +33,7 @@
     };
     rec.onerror = function (e) { failed = true; note.textContent = ERR[e.error] !== undefined ? ERR[e.error] : "La dictée a échoué."; };
     rec.onend = function () {
+      document.dispatchEvent(new CustomEvent("medibot-state", { detail: "idle" }));
       mark(false); rec = null;
       if (!failed) note.textContent = input.value.trim() ? "Relisez le texte, puis appuyez sur Envoyer." : "";
       input.focus();
