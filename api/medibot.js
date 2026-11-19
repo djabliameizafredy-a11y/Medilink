@@ -2,6 +2,8 @@
 // API Interactions (révision 2026-05-20), avec repli sur l'ancienne generateContent.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
+// Rapidité : modèle léger par défaut (flash), réponse courte, et streaming SSE quand le client demande « /api/medibot?stream=1 ».
+const MAXTOK = Number(process.env.MEDIBOT_MAX_TOKENS || 700); // ~150 mots maximum
 
 function stepsText(d) {
   const steps = Array.isArray(d && d.steps) ? d.steps : [];
@@ -49,11 +51,50 @@ module.exports = async (req, res) => {
     return j;
   };
 
+  // Mode streaming : le client lit « ?stream=1 » et affiche la réponse mot par mot.
+  // Le modèle renvoie un JSON ; on envoie des fragments bruts (« delta ») pendant la génération,
+  // puis l'objet complet analysé (« done »). Si le flux échoue, on retombe sur la réponse classique.
+  const wantsStream = String(req.query && req.query.stream) === "1";
+  if (wantsStream) {
+    try {
+      const r = await fetch(BASE + "/models/" + MODEL + ":streamGenerateContent?alt=sse", {
+        method: "POST", signal: AbortSignal.timeout(30000),
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: input }] }], generationConfig: { maxOutputTokens: MAXTOK } })
+      });
+      if (r.ok && r.body) {
+        res.status(200);
+        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("X-Accel-Buffering", "no");
+        let raw = "";
+        const dec = new TextDecoder();
+        for await (const chunk of r.body) {
+          const text = dec.decode(chunk, { stream: true });
+          for (const line of text.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const d = JSON.parse(line.slice(6));
+              const t = ((d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || []).map((p) => p.text || "").join("");
+              if (t) { raw += t; res.write("event: delta\ndata: " + JSON.stringify({ t: t.slice(-160) }) + "\n\n"); } // dernier fragment pour l'aperçu
+            } catch (e) { /* ligne partielle */ }
+          }
+        }
+        let j = null; try { j = parse(raw); } catch (e) {}
+        res.write("event: " + (j ? "done" : "error") + "\ndata: " + JSON.stringify(j || { error: "réponse illisible" }) + "\n\n");
+        res.end();
+        return;
+      }
+      console.error("stream", r.status);
+    } catch (e) { console.error("stream", e.message); }
+    if (!res.headersSent) { /* repli : réponse JSON classique ci-dessous */ } else { res.end(); return; }
+  }
+
   try {
     const r = await fetch(BASE + "/interactions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key, "Api-Revision": "2026-05-20" },
-      body: JSON.stringify({ model: MODEL, system_instruction: system, input, generation_config: { max_output_tokens: 2000 } })
+      body: JSON.stringify({ model: MODEL, system_instruction: system, input, generation_config: { max_output_tokens: MAXTOK } })
     });
     if (r.ok) { const j = parse(stepsText(await r.json())); if (j) return res.status(200).json(j); }
     else console.error("interactions", r.status, (await r.text()).slice(0, 300));
@@ -63,7 +104,7 @@ module.exports = async (req, res) => {
     const r = await fetch(BASE + "/models/" + MODEL + ":generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: input }] }], generationConfig: { maxOutputTokens: 2000 } })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: input }] }], generationConfig: { maxOutputTokens: MAXTOK } })
     });
     if (r.ok) {
       const d = await r.json();

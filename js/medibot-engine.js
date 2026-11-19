@@ -52,15 +52,67 @@ window.MediBot = {
     return this.step < asks.length ? "<br><br><em>" + asks[this.step] + "</em>" : "";
   },
 
-  async callGoogleGenAI(userText) {
+  // Réponse de MediBot. En priorité en flux continu (réponse affichée mot par mot),
+  // avec repli automatique sur la réponse classique si le streaming échoue.
+  async callGoogleGenAI(userText, previewEl) {
+    const body = JSON.stringify(this.requestPayload(userText));
+    const j = await this.callStream(body, previewEl);
+    if (j) return j;
+    return this.callPlain(body, userText);
+  },
+
+  requestPayload(userText) {
     const ctx = this.mode === "hospital" ? this.hospitalContext : this.pharmacyContext;
+    return { mode: this.mode, ctx: ctx, text: userText, history: this.history.slice(-8), step: this.step };
+  },
+
+  async callPlain(body, userText) {
     try {
-      const r = await fetch("/api/medibot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: this.mode, ctx: ctx, text: userText, history: this.history.slice(-8), step: this.step }) });
+      const r = await fetch("/api/medibot", { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
       const j = r.ok ? await r.json() : null;
-      this.history.push({ role: "utilisateur", text: userText });
-      if (j && j.replyHtml) this.history.push({ role: "medibot", text: String(j.replyHtml).replace(/<[^>]*>/g, " ") });
+      this.rememberTurn(userText, j);
       return j;
     } catch (e) { return null; }
+  },
+
+  async callStream(body, previewEl) {
+    try {
+      const r = await fetch("/api/medibot?stream=1", { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
+      if (!r.ok || !r.body) return null;
+      let final = null, raw = "";
+      const dec = new TextDecoder();
+      let buf = "";
+      for await (const chunk of r.body) {
+        buf += dec.decode(chunk, { stream: true });
+        const events = buf.split("\n\n"); buf = events.pop();
+        for (const ev of events) {
+          const dm = ev.match(/data: ([\s\S]*)/);
+          if (!dm) continue;
+          let d = null; try { d = JSON.parse(dm[1]); } catch (e) { continue; }
+          if (/event: delta/.test(ev)) {
+            raw += d.t || "";
+            if (previewEl) previewEl.textContent = "MediBot répond… " + this.streamPreview(raw);
+          } else if (/event: done/.test(ev)) final = d;
+        }
+      }
+      if (final) this.rememberTurn(JSON.parse(body).text, final);
+      return final;
+    } catch (e) { return null; }
+  },
+
+  // Aperçu lisible pendant le flux : on extrait « replyHtml » du JSON partiel, sans balises ni texte cassé.
+  streamPreview(raw) {
+    const m = raw.match(/"replyHtml"\s*:\s*"([\s\S]*)$/);
+    let t = m ? m[1] : "";
+    t = t.replace(/\\n/g, " ").replace(/\\+"/g, "").replace(/["\\{}]+$/g, "");
+    t = t.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    t = t.replace(/<[^>]*/, "").replace(/\s+/g, " ").trim();
+    return t.length > 120 ? "…" + t.slice(-120) : t;
+  },
+
+  rememberTurn(userText, j) {
+    this.history.push({ role: "utilisateur", text: userText });
+    if (j && j.replyHtml) this.history.push({ role: "medibot", text: String(j.replyHtml).replace(/<[^>]*>/g, " ") });
   },
 
   async handleUserInput(rawText) {
@@ -75,7 +127,7 @@ window.MediBot = {
     const ctx = this.hospitalContext;
     const lower = text.toLowerCase();
     const loading = this.addTypingIndicator();
-    const ai = await this.callGoogleGenAI(text);
+    const ai = await this.callGoogleGenAI(text, loading);
     if (loading) loading.remove();
     if (ai && ai.intent === "question") { this.addBotMessage(ai.replyHtml + this.pendingPrompt()); return; }
     if (ai) {
@@ -131,7 +183,7 @@ window.MediBot = {
     const ctx = this.pharmacyContext;
     const lower = text.toLowerCase();
     const loading = this.addTypingIndicator();
-    const ai = await this.callGoogleGenAI(text);
+    const ai = await this.callGoogleGenAI(text, loading);
     if (loading) loading.remove();
     if (ai && ai.intent === "question") { this.addBotMessage(ai.replyHtml + this.pendingPrompt()); return; }
     if (ai) {
@@ -210,6 +262,7 @@ window.MediBot = {
     el.innerHTML = html + buttons;
     feed.appendChild(el);
     feed.scrollTop = feed.scrollHeight;
+    document.dispatchEvent(new CustomEvent("medibot-message", { detail: { who: "bot", text: el.textContent || "" } }));
   },
 
   addUserMessage(text) {
@@ -220,5 +273,6 @@ window.MediBot = {
     el.textContent = text;
     feed.appendChild(el);
     feed.scrollTop = feed.scrollHeight;
+    document.dispatchEvent(new CustomEvent("medibot-message", { detail: { who: "user", text: text } }));
   }
 };

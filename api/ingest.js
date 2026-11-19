@@ -31,10 +31,19 @@ async function ingestEpmc() {
   }
   return rows;
 }
-// Sources francophones : FR_FEEDS = [{"name":"…","url":"https://…","category":"prevention","summary":true}] (adresses et conditions à vérifier par l'éditeur).
+// Sources francophones. Par défaut, flux officiels vérifiés le 2026-11-20 (réponse RSS valide, articles en français) :
+// OMS actualités fr + Inserm. La variable Vercel FR_FEEDS peut les remplacer :
+// FR_FEEDS = [{"name":"…","url":"https://…","category":"prevention","summary":true}] (adresses et conditions à vérifier par l'éditeur).
+const DEFAULT_FEEDS = [
+  { name: "OMS — Actualités (français)", url: "https://www.who.int/rss-feeds/news-french.xml", category: "", summary: true },
+  { name: "Inserm", url: "https://www.inserm.fr/feed/", category: "", summary: true }
+];
+// Mots-clés pour classer automatiquement un article dont le flux n'impose pas de catégorie.
 const KW = [["paludisme", /paludisme|malaria/i], ["typhoide", /typho/i], ["diabete", /diab/i], ["hypertension", /hypertension|tension art/i], ["sante_mentale", /sant[ée] mentale|d[ée]pression|anxi/i], ["sommeil", /sommeil/i], ["nutrition", /nutrition|aliment/i], ["sante_maternelle_infantile", /maternel|enfant|nouveau-n|grossesse|vaccin/i], ["medicaments", /m[ée]dicament|pharma/i], ["maladies_infectieuses", /chol[ée]ra|ebola|[ée]pid|infect|virus|fi[èe]vre/i]];
 async function ingestFeeds() {
-  let feeds = []; try { feeds = JSON.parse(process.env.FR_FEEDS || "[]"); } catch (e) { return []; }
+  let feeds = null;
+  try { const raw = (process.env.FR_FEEDS || "").trim(); if (raw) feeds = JSON.parse(raw); } catch (e) { feeds = null; }
+  if (!Array.isArray(feeds) || !feeds.length) feeds = DEFAULT_FEEDS;
   const rows = [];
   for (const f of feeds.slice(0, 10)) {
     if (!httpsUrl(f.url)) continue;
