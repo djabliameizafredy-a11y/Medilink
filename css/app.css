@@ -223,6 +223,8 @@ a {
 .medibot-orb[data-state="listening"]::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--green); animation: mb-ping 1.2s ease-out infinite; }
 .medibot-orb[data-state="alert"] .brows { opacity: 1; }
 .medibot-orb[data-state="alert"] .eye { animation: none; transform: scaleY(0.85); }
+.medibot-orb[data-state="speaking"] .eye { animation: none; transform: scaleY(0.6); }
+.medibot-orb[data-state="speaking"]::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--green); animation: mb-ping 0.9s ease-out infinite; }
 @keyframes mb-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes mb-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes mb-look { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }

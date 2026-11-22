@@ -40,4 +40,54 @@
     };
     try { rec.start(); } catch (err) { rec = null; mark(false); note.textContent = "La dictée n’a pas pu démarrer."; }
   };
+
+  // ---- Mode conversation vocale (étape 1) : MediBot lit ses réponses à voix haute,
+  // puis relance automatiquement l'écoute. Désactivable par le bouton « Haut-parleur » ;
+  // coupé d'office si l'utilisateur écrit dans le chat.
+  var TTS = "speechSynthesis" in window;
+  var voiceOn = false;
+  try { voiceOn = localStorage.getItem("medilink_voice") === "1"; } catch (e) {}
+  var vbtn = document.createElement("button");
+  vbtn.type = "button"; vbtn.className = "btn " + (voiceOn ? "btn-dark" : "btn-outline-dark");
+  vbtn.title = "Lire les réponses de MediBot à voix haute et enchaîner la dictée";
+  vbtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"></path><path class="wv" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"></path></svg>';
+  function vmark() {
+    vbtn.className = "btn " + (voiceOn ? "btn-dark" : "btn-outline-dark");
+    vbtn.setAttribute("aria-pressed", String(voiceOn));
+    vbtn.setAttribute("aria-label", voiceOn ? "Couper la lecture vocale" : "Activer la lecture vocale");
+    var wv = vbtn.querySelector(".wv"); if (wv) wv.style.opacity = voiceOn ? "1" : "0.25";
+  }
+  group.insertBefore(vbtn, btn); vmark();
+  vbtn.onclick = function () {
+    voiceOn = !voiceOn;
+    try { localStorage.setItem("medilink_voice", voiceOn ? "1" : "0"); } catch (e) {}
+    if (!voiceOn && TTS) window.speechSynthesis.cancel();
+    vmark();
+    if (voiceOn && TTS && !window.speechSynthesis.getVoices().some(function (v) { return /^fr/i.test(v.lang); })) {
+      note.textContent = "Lecture vocale activée. Si aucune voix française n’est installée, le son peut être étranger.";
+    }
+  };
+  function frVoice() {
+    var vs = window.speechSynthesis.getVoices() || [];
+    return vs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); })[0] || vs.filter(function (v) { return /^fr/i.test(v.lang); })[0] || null;
+  }
+  function speakThenListen(text) {
+    if (!voiceOn || !TTS) return;
+    var u = new SpeechSynthesisUtterance(String(text || "").slice(0, 600));
+    u.lang = "fr-FR"; var v = frVoice(); if (v) u.voice = v;
+    u.onstart = function () { document.dispatchEvent(new CustomEvent("medibot-state", { detail: "speaking" })); };
+    u.onend = function () {
+      document.dispatchEvent(new CustomEvent("medibot-state", { detail: "idle" }));
+      if (voiceOn && !rec) btn.onclick(); // relance automatique de l'écoute
+    };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+  document.addEventListener("medibot-message", function (e) {
+    var d = e.detail || {};
+    if (!d.text || /r[ée]dige une r[ée]ponse/.test(d.text)) return;
+    if (d.who === "user") { if (TTS) window.speechSynthesis.cancel(); return; } // l'utilisateur tape : on coupe la voix
+    var t = d.text.replace(/^(Quel est le niveau|Pour quelle situation|Où êtes-vous|Où devez-vous)[\s\S]*$/, function (m) { return m.split("?")[0] + "?"; });
+    speakThenListen(t);
+  });
 })();
